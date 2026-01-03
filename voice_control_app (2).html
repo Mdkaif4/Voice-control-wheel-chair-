@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Control Wheelchair</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .status {
+            background: #f0f0f0;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .status-text {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .connection-status {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .connected {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .disconnected {
+            background: #f44336;
+            color: white;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            margin-bottom: 15px;
+        }
+        
+        .btn:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-connect {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-connect:disabled {
+            background: #999;
+            cursor: not-allowed;
+        }
+        
+        .voice-section {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .btn-voice {
+            background: white;
+            color: #4CAF50;
+            font-size: 20px;
+            padding: 20px;
+            width: 100%;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .btn-voice:disabled {
+            background: #ccc;
+            color: #666;
+            cursor: not-allowed;
+        }
+        
+        .btn-voice.listening {
+            background: #ff4444;
+            color: white;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { 
+                transform: scale(1);
+                box-shadow: 0 4px 15px rgba(255, 68, 68, 0.4);
+            }
+            50% { 
+                transform: scale(1.05);
+                box-shadow: 0 8px 25px rgba(255, 68, 68, 0.6);
+            }
+        }
+        
+        .voice-status {
+            color: white;
+            font-size: 14px;
+            margin-top: 10px;
+            min-height: 20px;
+        }
+        
+        .voice-command {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            min-height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .control-btn {
+            padding: 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            transition: all 0.3s;
+        }
+        
+        .control-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .btn-forward { background: #2196F3; }
+        .btn-backward { background: #FF9800; }
+        .btn-left { background: #9C27B0; }
+        .btn-right { background: #E91E63; }
+        .btn-stop { background: #f44336; grid-column: 1 / -1; }
+        
+        .command-log {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 10px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+        
+        .command-log h3 {
+            font-size: 14px;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .log-entry {
+            font-size: 12px;
+            color: #666;
+            padding: 5px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .log-entry.success { color: #4CAF50; }
+        .log-entry.error { color: #f44336; }
+        
+        .note {
+            background: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 12px;
+            margin-top: 20px;
+            border-radius: 5px;
+            font-size: 13px;
+        }
+        
+        .voice-commands-list {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+        
+        .voice-commands-list h4 {
+            color: #667eea;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .voice-commands-list ul {
+            list-style: none;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .voice-commands-list li {
+            padding: 5px 0;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .voice-commands-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .mic-icon {
+            font-size: 30px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🦽 Voice Control Wheelchair</h1>
+        <p class="subtitle">Chrome Voice Recognition</p>
+        
+        <div class="status">
+            <div class="status-text">Bluetooth Status</div>
+            <span class="connection-status disconnected" id="btStatus">Disconnected</span>
+        </div>
+        
+        <button class="btn btn-connect" id="connectBtn">📡 Connect Bluetooth HC-05</button>
+        
+        <div class="voice-section">
+            <button class="btn-voice" id="voiceBtn" disabled>
+                <span class="mic-icon">🎤</span> TAP TO SPEAK
+            </button>
+            <div class="voice-status" id="voiceStatus">Connect Bluetooth first</div>
+            <div class="voice-command" id="voiceCommand">Voice command appears here</div>
+        </div>
+        
+        <div class="controls">
+            <button class="control-btn btn-forward" onclick="sendCommand('FRONT')">⬆️ Forward</button>
+            <button class="control-btn btn-backward" onclick="sendCommand('BACK')">⬇️ Backward</button>
+            <button class="control-btn btn-left" onclick="sendCommand('LEFT')">⬅️ Left</button>
+            <button class="control-btn btn-right" onclick="sendCommand('RIGHT')">➡️ Right</button>
+            <button class="control-btn btn-stop" onclick="sendCommand('STOP')">🛑 STOP</button>
+        </div>
+        
+        <div class="voice-commands-list">
+            <h4>📋 Say These Commands:</h4>
+            <ul>
+                <li>🗣️ "Forward" or "Front" or "Go" → Move Forward</li>
+                <li>🗣️ "Back" or "Backward" or "Reverse" → Move Back</li>
+                <li>🗣️ "Left" or "Turn Left" → Turn Left</li>
+                <li>🗣️ "Right" or "Turn Right" → Turn Right</li>
+                <li>🗣️ "Stop" or "Halt" → Emergency Stop</li>
+            </ul>
+        </div>
+        
+        <div class="command-log">
+            <h3>📝 Command Log:</h3>
+            <div id="logContainer"></div>
+        </div>
+        
+        <div class="note">
+            <strong>📌 Setup Instructions:</strong><br>
+            1. Pair HC-05 in phone Bluetooth settings (PIN: 1234)<br>
+            2. Click "Connect Bluetooth HC-05" above<br>
+            3. Allow microphone access when prompted<br>
+            4. Tap mic button and speak clearly<br>
+            5. Command auto-sends to wheelchair!
+        </div>
+    </div>
+
+    <script>
+        let bluetoothDevice;
+        let characteristic;
+        let isConnected = false;
+        let isListening = false;
+        let recognition;
+        
+        const connectBtn = document.getElementById('connectBtn');
+        const voiceBtn = document.getElementById('voiceBtn');
+        const btStatus = document.getElementById('btStatus');
+        const voiceStatus = document.getElementById('voiceStatus');
+        const voiceCommand = document.getElementById('voiceCommand');
+        const logContainer = document.getElementById('logContainer');
+        
+        // Check browser support
+        if (!navigator.bluetooth) {
+            alert('❌ Web Bluetooth not supported!\n\nPlease:\n✓ Use Chrome browser on Android\n✓ Enable Bluetooth in settings');
+        }
+        
+        // Initialize Speech Recognition
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.lang = 'en-US';
+            recognition.continuous = false;
+            recognition.interimResults = true;
+            recognition.maxAlternatives = 1;
+            
+            recognition.onstart = () => {
+                isListening = true;
+                voiceBtn.classList.add('listening');
+                voiceBtn.innerHTML = '<span class="mic-icon">🎤</span> LISTENING...';
+                voiceStatus.textContent = '🎤 Listening... Speak now!';
+                voiceCommand.textContent = '...';
+                addLog('🎤 Voice recognition started', 'success');
+            };
+            
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                const isFinal = event.results[0].isFinal;
+                
+                voiceCommand.textContent = transcript;
+                
+                if (isFinal) {
+                    processVoiceCommand(transcript);
+                }
+            };
+            
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                voiceStatus.textContent = '❌ Error: ' + event.error;
+                addLog('❌ Voice error: ' + event.error, 'error');
+                
+                if (event.error === 'not-allowed') {
+                    alert('🎤 Microphone permission denied!\n\nPlease:\n1. Click the 🔒 icon in address bar\n2. Allow microphone access\n3. Refresh page and try again');
+                }
+                
+                resetVoiceButton();
+            };
+            
+            recognition.onend = () => {
+                resetVoiceButton();
+            };
+            
+        } else {
+            alert('❌ Voice recognition not supported!\n\nPlease use Chrome browser on Android or desktop.');
+        }
+        
+        // Connect to Bluetooth
+        connectBtn.addEventListener('click', async () => {
+            try {
+                connectBtn.textContent = '🔄 Connecting...';
+                connectBtn.disabled = true;
+                
+                bluetoothDevice = await navigator.bluetooth.requestDevice({
+                    acceptAllDevices: true,
+                    optionalServices: ['0000ffe0-0000-1000-8000-00805f9b34fb']
+                });
+                
+                addLog('Found: ' + bluetoothDevice.name);
+                
+                const server = await bluetoothDevice.gatt.connect();
+                const service = await server.getPrimaryService('0000ffe0-0000-1000-8000-00805f9b34fb');
+                characteristic = await service.getCharacteristic('0000ffe1-0000-1000-8000-00805f9b34fb');
+                
+                btStatus.textContent = 'Connected ✓';
+                btStatus.className = 'connection-status connected';
+                connectBtn.textContent = '✅ Connected to ' + bluetoothDevice.name;
+                isConnected = true;
+                
+                voiceBtn.disabled = false;
+                voiceStatus.textContent = 'Ready! Tap mic to speak';
+                
+                addLog('✅ Bluetooth connected!', 'success');
+                
+                bluetoothDevice.addEventListener('gattserverdisconnected', onDisconnected);
+                
+            } catch (error) {
+                console.error('Connection error:', error);
+                connectBtn.textContent = '📡 Connect Bluetooth HC-05';
+                connectBtn.disabled = false;
+                addLog('❌ Connection failed', 'error');
+                
+                if (error.name === 'NotFoundError') {
+                    alert('❌ HC-05 not found!\n\nMake sure:\n✓ HC-05 is powered ON\n✓ Already paired in Bluetooth settings\n✓ Within range');
+                }
+            }
+        });
+        
+        function onDisconnected() {
+            isConnected = false;
+            btStatus.textContent = 'Disconnected';
+            btStatus.className = 'connection-status disconnected';
+            connectBtn.textContent = '📡 Reconnect Bluetooth';
+            connectBtn.disabled = false;
+            voiceBtn.disabled = true;
+            voiceStatus.textContent = 'Bluetooth disconnected';
+            addLog('⚠️ Bluetooth disconnected', 'error');
+        }
+        
+        // Voice button click
+        voiceBtn.addEventListener('click', () => {
+            if (!isConnected) {
+                alert('⚠️ Please connect Bluetooth first!');
+                return;
+            }
+            
+            if (!recognition) {
+                alert('❌ Voice recognition not available in this browser!');
+                return;
+            }
+            
+            if (!isListening) {
+                try {
+                    recognition.start();
+                } catch (error) {
+                    console.error('Start error:', error);
+                    if (error.name === 'InvalidStateError') {
+                        recognition.stop();
+                        setTimeout(() => recognition.start(), 100);
+                    }
+                }
+            } else {
+                recognition.stop();
+            }
+        });
+        
+        function resetVoiceButton() {
+            isListening = false;
+            voiceBtn.classList.remove('listening');
+            voiceBtn.innerHTML = '<span class="mic-icon">🎤</span> TAP TO SPEAK';
+            voiceStatus.textContent = 'Ready! Tap mic to speak';
+        }
+        
+        // Process voice command
+        function processVoiceCommand(transcript) {
+            const cmd = transcript.toUpperCase();
+            addLog('🗣️ Heard: "' + transcript + '"');
+            
+            let command = null;
+            
+            if (cmd.includes('FORWARD') || cmd.includes('FRONT') || cmd.includes('GO')) {
+                command = 'FRONT';
+            } else if (cmd.includes('BACK') || cmd.includes('BACKWARD') || cmd.includes('REVERSE')) {
+                command = 'BACK';
+            } else if (cmd.includes('LEFT')) {
+                command = 'LEFT';
+            } else if (cmd.includes('RIGHT')) {
+                command = 'RIGHT';
+            } else if (cmd.includes('STOP') || cmd.includes('HALT') || cmd.includes('WAIT')) {
+                command = 'STOP';
+            }
+            
+            if (command) {
+                voiceStatus.textContent = '✅ Sending: ' + command;
+                sendCommand(command);
+            } else {
+                voiceStatus.textContent = '❓ Command not recognized';
+                addLog('❓ Unknown command: "' + transcript + '"', 'error');
+                voiceCommand.textContent = 'Try: Forward, Back, Left, Right, Stop';
+            }
+        }
+        
+        // Send command to Arduino
+        async function sendCommand(cmd) {
+            if (!isConnected || !characteristic) {
+                alert('⚠️ Connect Bluetooth first!');
+                return;
+            }
+            
+            try {
+                const encoder = new TextEncoder();
+                await characteristic.writeValue(encoder.encode(cmd + '\n'));
+                addLog('✅ Sent: ' + cmd, 'success');
+                
+                // Visual feedback
+                if (event && event.target) {
+                    event.target.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        event.target.style.transform = 'scale(1)';
+                    }, 200);
+                }
+                
+            } catch (error) {
+                console.error('Send error:', error);
+                addLog('❌ Failed to send: ' + cmd, 'error');
+            }
+        }
+        
+        // Add to log
+        function addLog(message, type = '') {
+            const entry = document.createElement('div');
+            entry.className = 'log-entry ' + type;
+            const time = new Date().toLocaleTimeString();
+            entry.textContent = `[${time}] ${message}`;
+            logContainer.insertBefore(entry, logContainer.firstChild);
+            
+            while (logContainer.children.length > 6) {
+                logContainer.removeChild(logContainer.lastChild);
+            }
+        }
+        
+        // Keyboard shortcuts for testing
+        document.addEventListener('keydown', (e) => {
+            if (!isConnected) return;
+            
+            switch(e.key.toLowerCase()) {
+                case 'w':
+                case 'arrowup':
+                    sendCommand('FRONT');
+                    break;
+                case 's':
+                case 'arrowdown':
+                    sendCommand('BACK');
+                    break;
+                case 'a':
+                case 'arrowleft':
+                    sendCommand('LEFT');
+                    break;
+                case 'd':
+                case 'arrowright':
+                    sendCommand('RIGHT');
+                    break;
+                case ' ':
+                    e.preventDefault();
+                    sendCommand('STOP');
+                    break;
+            }
+        });
+        
+        addLog('App ready. Connect Bluetooth to begin.');
+    </script>
+</body>
+</html>
